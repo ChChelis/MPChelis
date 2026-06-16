@@ -55,10 +55,18 @@
       "name": "FullArt",
       "description": "Cartas full art.",
       "uploaders": [
-        "Sliver of Slytherin"
+        "Sliver of Slytherin",
+        "j1va",
+        "Nelynes",
+        "PsilosX",
+        "JohnPrime"
       ],
       "activeUploaders": [
-        "Sliver of Slytherin"
+        "Sliver of Slytherin",
+        "j1va",
+        "Nelynes",
+        "PsilosX",
+        "JohnPrime"
       ]
     }
   ]

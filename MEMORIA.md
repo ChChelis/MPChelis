@@ -498,3 +498,74 @@ Validacoes:
 
 - O script embutido de `index.html` foi parseado com `new Function` sem erro.
 - Foi confirmado que `<div class="grid"></div>` aparece antes de `<div class="pager">` no template de resultados.
+
+### Correcoes de categorias, cards e modais longas
+
+O usuario relatou tres problemas:
+
+- categorias criadas pelo usuario nao exibiam o link `Configurar uploaders`;
+- alguns resultados de pesquisa cortavam o botao `Escolher` na direita;
+- a modal de adicionar uploader a categorias ficava alta demais e o botao de confirmacao saia da tela sem scroll utilizavel.
+
+Implementacao:
+
+- Em `index.html`, o botao `Configurar uploaders` deixou de ser exclusivo de `OldFrame & Scan` e agora aparece para qualquer categoria que tenha uploaders.
+- O painel de checklist de uploaders agora usa `state.configuringCategoryName`, permitindo configurar qualquer categoria clicada.
+- Os cards de resultado ficaram com largura minima maior na grade e botoes internos limitados a `max-width: 100%`; o botao `Escolher` usa `width: 100%`.
+- A linha de fonte/uploader nos cards agora permite quebra e `overflow-wrap: anywhere`, reduzindo estouro com nomes longos.
+- As modais ganharam `max-height` e `overflow: auto`; a lista de categorias da modal de adicionar uploader tambem ganhou altura maxima e scroll proprio.
+
+Validacoes:
+
+- O script embutido de `index.html` foi parseado com `new Function` sem erro.
+- `git status` mostrou `index.html` alterado por esta correcao e `config.json` ja modificado localmente antes; `config.json` nao foi editado nesta etapa.
+
+### Colapso de grupos apos escolha de arte
+
+Por solicitacao do usuario, ao escolher uma carta entre os resultados de um grupo de pesquisa, o grupo inteiro passa a recolher para economizar espaco e indicar conclusao.
+
+Implementacao:
+
+- Cada bloco em `state.resultBlocks` ganhou os campos `collapsed` e `selectedDocName`.
+- Ao clicar em `Escolher`, `addSelection` recebe tambem o indice do bloco e marca somente aquele bloco como colapsado.
+- O bloco colapsado mostra um resumo com o nome da arte selecionada, a pagina atual e um botao `Expandir resultados`.
+- O botao de expandir apenas altera `collapsed` para `false` e chama `renderResults`, sem refazer busca e sem alterar `page`, `ids` ou `docs`.
+- A escolha continua sendo registrada em `state.selections` e no XML normalmente.
+
+Validacoes:
+
+- O script embutido de `index.html` foi parseado com `new Function` sem erro.
+- Foi confirmado no codigo que `block.page` e preservado no grupo colapsado e usado novamente ao expandir.
+
+### Ampliacao de pesquisa por grupo de resultado
+
+O usuario pediu um botao `Ampliar pesquisa?` ao lado do nome de cada grupo de resultado para escolher novas categorias de uploaders apenas para aquela secao.
+
+Implementacao:
+
+- `index.html` recebeu uma modal `blockCategoryModal` para escolher categorias por grupo.
+- Cada bloco de resultado ganhou `categoryNames`, separado da selecao global.
+- O filtro de fontes e documentos foi parametrizado por lista de categorias.
+- O botao `Ampliar pesquisa?` foi adicionado no cabecalho do bloco aberto e tambem no bloco recolhido.
+- Ao aplicar categorias no grupo, somente aquele bloco refaz a busca textual e recarrega sua pagina atual.
+
+Validacao parcial:
+
+- Foi confirmado por busca textual que `Ampliar pesquisa?`, `blockCategoryModal` e `query-title-row` existem em `index.html`.
+- Foi confirmado que nao ha referencia restante a `defaultSearchSettings`.
+- A primeira tentativa de parse via `node` falhou por limite de tamanho de argumento do Windows; refazer a validacao usando arquivo temporario.
+- A validacao foi refeita com o script extraido para arquivo temporario e `new Function` passou sem erro.
+- Foi confirmado que existem as funcoes `sourcesForCategories`, `searchSettingsForSources`, `openBlockCategoryModal` e `applyBlockCategories`.
+- Foi confirmado que `categoryNames` e salvo por bloco e usado para filtrar os documentos daquele resultado especifico.
+- `git status --short --branch` ao final mostrou `MEMORIA.md`, `index.html` e `config.json` modificados; `config.json` ja estava modificado localmente antes desta rodada e nao foi alterado nesta implementacao.
+
+### Preparacao para novo push ao GitHub
+
+O usuario pediu para subir o projeto no GitHub.
+
+Checagem antes do commit:
+
+- `git status --short --branch` mostrou a branch `main` rastreando `origin/main` e tres arquivos modificados: `MEMORIA.md`, `config.json`, `index.html`.
+- `git diff --stat` mostrou 357 insercoes e 33 remocoes.
+- `git diff -- config.json` mostrou alteracao na categoria `FullArt`, adicionando `j1va`, `Nelynes`, `PsilosX` e `JohnPrime` em `uploaders` e `activeUploaders`.
+- Como o pedido foi subir o projeto atual, a intencao e incluir o estado atual dos tres arquivos no commit.

@@ -230,6 +230,39 @@
         margin-bottom: 12px;
       }
 
+      .query-title-row {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .query-title-row h2 {
+        margin-bottom: 0;
+      }
+
+      .collapsed-result {
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 12px;
+      }
+
+      .collapsed-result > div {
+        min-width: 0;
+      }
+
+      .collapsed-result strong {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .pager {
         align-items: center;
         display: flex;
@@ -241,7 +274,7 @@
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
         gap: 12px;
       }
 
@@ -251,6 +284,15 @@
         border-radius: 8px;
         overflow: hidden;
         min-width: 0;
+      }
+
+      .card button {
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .card button.primary {
+        width: 100%;
       }
 
       .thumb {
@@ -271,20 +313,25 @@
         color: var(--muted);
         font-size: 12px;
         line-height: 1.35;
+        overflow-wrap: anywhere;
       }
 
       .source-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
         gap: 8px;
+        min-width: 0;
       }
 
       .source-row .meta {
+        flex: 1 1 92px;
         min-width: 0;
       }
 
       .small-button {
+        flex: 0 0 auto;
         min-height: 28px;
         padding: 4px 7px;
         font-size: 11px;
@@ -328,9 +375,10 @@
         z-index: 20;
         background: rgba(20, 28, 36, 0.58);
         display: none;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
         padding: 18px;
+        overflow: auto;
       }
 
       .modal-backdrop.open {
@@ -339,6 +387,8 @@
 
       .modal {
         width: min(720px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
         background: var(--panel);
         border-radius: 8px;
         border: 1px solid var(--line);
@@ -452,6 +502,9 @@
       .category-select-list {
         display: grid;
         gap: 8px;
+        max-height: min(52vh, 520px);
+        overflow: auto;
+        padding-right: 4px;
       }
 
       .category-select-item {
@@ -682,6 +735,24 @@
       </div>
     </div>
 
+    <div id="blockCategoryModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div>
+          <h2>Ampliar pesquisa</h2>
+          <p class="subtle">
+            Escolha categorias para refazer somente este grupo de resultado.
+          </p>
+        </div>
+        <div id="blockCategoryOptions" class="category-options"></div>
+        <div class="actions">
+          <button id="cancelBlockCategories" type="button">Cancelar</button>
+          <button class="primary" id="applyBlockCategories" type="button">
+            Aplicar nesta seção
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div id="addUploaderModal" class="modal-backdrop" role="dialog" aria-modal="true">
       <div class="modal">
         <div>
@@ -730,12 +801,16 @@
         },
         selectedCategories: [],
         sources: [],
+        allSources: null,
         resultBlocks: [],
         selections: [],
         docs: new Map(),
         downloadJobId: null,
         downloadPollTimer: null,
         pendingUploader: null,
+        configuringCategoryName: "",
+        blockCategoryIndex: -1,
+        pendingBlockCategories: [],
       };
 
       const $ = (id) => document.getElementById(id);
@@ -809,16 +884,16 @@
         ];
       }
 
-      function selectedCategoryObjects() {
+      function selectedCategoryObjects(categoryNames = state.selectedCategories) {
         return state.config.categories.filter((category) =>
-          state.selectedCategories.includes(category.name)
+          categoryNames.includes(category.name)
         );
       }
 
-      function activeUploaders() {
+      function activeUploaders(categoryNames = state.selectedCategories) {
         return Array.from(
           new Set(
-            selectedCategoryObjects()
+            selectedCategoryObjects(categoryNames)
               .filter((category) => category.uploaders?.length)
               .flatMap((category) =>
                 Array.isArray(category.activeUploaders)
@@ -829,8 +904,8 @@
         );
       }
 
-      function hasUnfilteredCategory() {
-        return selectedCategoryObjects().some(
+      function hasUnfilteredCategory(categoryNames = state.selectedCategories) {
+        return selectedCategoryObjects(categoryNames).some(
           (category) => !category.uploaders?.length
         );
       }
@@ -839,15 +914,15 @@
         return String(value || "").trim().toLowerCase();
       }
 
-      function uploaderAllowed(value) {
-        if (hasUnfilteredCategory()) return true;
-        const uploaders = activeUploaders().map(normalise).filter(Boolean);
+      function uploaderAllowed(value, categoryNames = state.selectedCategories) {
+        if (hasUnfilteredCategory(categoryNames)) return true;
+        const uploaders = activeUploaders(categoryNames).map(normalise).filter(Boolean);
         if (!uploaders.length) return false;
         const candidate = normalise(value);
         return uploaders.some((uploader) => candidate.includes(uploader));
       }
 
-      function sourceAllowed(source) {
+      function sourceAllowed(source, categoryNames = state.selectedCategories) {
         return [
           source.name,
           source.key,
@@ -855,16 +930,16 @@
           source.sourceVerbose,
           source.sourceName,
           source.source,
-        ].some(uploaderAllowed);
+        ].some((value) => uploaderAllowed(value, categoryNames));
       }
 
-      function docAllowed(doc) {
+      function docAllowed(doc, categoryNames = state.selectedCategories) {
         return [
           doc.sourceVerbose,
           doc.sourceName,
           doc.source,
           doc.name,
-        ].some(uploaderAllowed);
+        ].some((value) => uploaderAllowed(value, categoryNames));
       }
 
       function sanitiseWhitespace(text) {
@@ -926,16 +1001,27 @@
 
       async function ensureSources() {
         if (state.sources.length) return;
+        state.sources = await sourcesForCategories(state.selectedCategories);
+      }
+
+      async function ensureAllSources() {
+        if (state.allSources) return state.allSources;
         const data = await fetchJSON("/2/sources/");
-        state.sources = Object.values(data.results || {})
-          .filter(sourceAllowed)
+        state.allSources = Object.values(data.results || {});
+        return state.allSources;
+      }
+
+      async function sourcesForCategories(categoryNames) {
+        const sources = await ensureAllSources();
+        return sources
+          .filter((source) => sourceAllowed(source, categoryNames))
           .map((source) => [source.pk, true]);
       }
 
-      function defaultSearchSettings() {
+      function searchSettingsForSources(sources = state.sources) {
         return {
           searchTypeSettings: { fuzzySearch: true, filterCardbacks: false },
-          sourceSettings: { sources: state.sources },
+          sourceSettings: { sources },
           filterSettings: {
             minimumDPI: 0,
             maximumDPI: 1500,
@@ -988,7 +1074,7 @@
           const searchData = await fetchJSON("/2/editorSearch/", {
             method: "POST",
             body: JSON.stringify({
-              searchSettings: defaultSearchSettings(),
+              searchSettings: searchSettingsForSources(),
               queries: parsed.map((item) => item.query),
             }),
           });
@@ -1005,6 +1091,9 @@
               page: 0,
               pageSize,
               docs: [],
+              categoryNames: [...state.selectedCategories],
+              collapsed: false,
+              selectedDocName: "",
             };
             await loadBlockPage(block, 0);
             blocks.push(block);
@@ -1039,7 +1128,13 @@
               })
             ).results || {}
           : {};
-        const filteredDocs = ids.map((id) => docs[id]).filter(Boolean).filter(docAllowed);
+        const categoryNames = block.categoryNames?.length
+          ? block.categoryNames
+          : state.selectedCategories;
+        const filteredDocs = ids
+          .map((id) => docs[id])
+          .filter(Boolean)
+          .filter((doc) => docAllowed(doc, categoryNames));
         filteredDocs.forEach((doc) => state.docs.set(doc.identifier, doc));
         block.page = safePage;
         block.docs = filteredDocs;
@@ -1066,11 +1161,59 @@
           const totalPages = Math.max(1, Math.ceil(block.ids.length / block.pageSize));
           const section = document.createElement("section");
           section.className = "query-block";
+          if (block.collapsed) {
+            section.innerHTML = `
+              <div class="query-head">
+                <div>
+                  <div class="query-title-row">
+                    <h2>${escapeHTML(block.item.rawLine)}</h2>
+                    <button class="small-button" type="button" data-block-categories>
+                      Ampliar pesquisa?
+                    </button>
+                  </div>
+                  <div class="subtle">${block.ids.length} resultado(s) no site original · Página ${
+                    block.page + 1
+                  } de ${totalPages}</div>
+                  <div class="subtle">Categorias desta seção: ${escapeHTML(
+                    block.categoryNames?.length
+                      ? block.categoryNames.join(", ")
+                      : state.selectedCategories.join(", ")
+                  )}</div>
+                </div>
+              </div>
+              <div class="collapsed-result">
+                <div>
+                  <strong>${escapeHTML(block.selectedDocName || "Arte selecionada")}</strong>
+                  <div class="subtle">Grupo concluído e recolhido.</div>
+                </div>
+                <button type="button" data-expand-block>Expandir resultados</button>
+              </div>
+            `;
+            section.querySelector("[data-expand-block]").addEventListener("click", () => {
+              block.collapsed = false;
+              renderResults();
+            });
+            section.querySelector("[data-block-categories]").addEventListener("click", () => {
+              openBlockCategoryModal(blockIndex);
+            });
+            resultsEl.appendChild(section);
+            continue;
+          }
           section.innerHTML = `
             <div class="query-head">
               <div>
-                <h2>${escapeHTML(block.item.rawLine)}</h2>
+                <div class="query-title-row">
+                  <h2>${escapeHTML(block.item.rawLine)}</h2>
+                  <button class="small-button" type="button" data-block-categories>
+                    Ampliar pesquisa?
+                  </button>
+                </div>
                 <div class="subtle">${block.ids.length} resultado(s) no site original</div>
+                <div class="subtle">Categorias desta seção: ${escapeHTML(
+                  block.categoryNames?.length
+                    ? block.categoryNames.join(", ")
+                    : state.selectedCategories.join(", ")
+                )}</div>
               </div>
             </div>
             <div class="grid"></div>
@@ -1096,6 +1239,9 @@
                 setStatus(error.message || String(error), "error")
               );
             });
+          });
+          section.querySelector("[data-block-categories]").addEventListener("click", () => {
+            openBlockCategoryModal(blockIndex);
           });
 
           const grid = section.querySelector(".grid");
@@ -1126,7 +1272,7 @@
               openAddUploaderModal(uploader);
             });
             buttons[1].addEventListener("click", () => {
-              addSelection(block.item, doc);
+              addSelection(block.item, doc, blockIndex);
             });
             grid.appendChild(card);
           }
@@ -1135,7 +1281,7 @@
         }
       }
 
-      function addSelection(item, doc) {
+      function addSelection(item, doc, blockIndex = -1) {
         state.selections.push({
           input: item.rawLine,
           quantity: item.quantity,
@@ -1143,8 +1289,14 @@
           doc,
         });
         state.docs.set(doc.identifier, doc);
+        const block = state.resultBlocks[blockIndex];
+        if (block) {
+          block.collapsed = true;
+          block.selectedDocName = doc.name || item.rawLine;
+        }
         renderSelections();
         updateXML();
+        renderResults();
       }
 
       function renderSelections() {
@@ -1482,12 +1634,12 @@
           `;
           button.addEventListener("click", () => toggleCategory(category.name));
           card.appendChild(button);
-          if (category.name === "OldFrame & Scan") {
+          if (uploaders.length) {
             const configButton = document.createElement("button");
             configButton.type = "button";
             configButton.className = "category-link";
             configButton.textContent = "Configurar uploaders";
-            configButton.addEventListener("click", openUploaderPanel);
+            configButton.addEventListener("click", () => openUploaderPanel(category.name));
             card.appendChild(configButton);
           }
           optionsEl.appendChild(card);
@@ -1535,6 +1687,101 @@
         updateCategoryLabel();
         closeCategoryModal();
         setStatus(`Categorias selecionadas: ${state.selectedCategories.join(", ")}`, "ok");
+      }
+
+      function renderBlockCategoryOptions() {
+        const container = $("blockCategoryOptions");
+        container.innerHTML = "";
+        for (const category of state.config.categories) {
+          const uploaders = Array.isArray(category.uploaders)
+            ? category.uploaders
+            : [];
+          const activeCount = Array.isArray(category.activeUploaders)
+            ? category.activeUploaders.length
+            : uploaders.length;
+          const selected = state.pendingBlockCategories.includes(category.name);
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = `category-option ${selected ? "selected" : ""}`.trim();
+          card.innerHTML = `
+            <input class="category-check" type="checkbox" ${
+              selected ? "checked" : ""
+            } tabindex="-1" aria-hidden="true" />
+            <span class="category-option-content">
+              <strong>${escapeHTML(category.name)}</strong>
+              <span class="subtle">${
+                uploaders.length
+                  ? `${activeCount}/${uploaders.length} uploader(s) ativos`
+                  : "Sem filtro de uploader"
+              }</span>
+            </span>
+          `;
+          card.addEventListener("click", () => {
+            if (state.pendingBlockCategories.includes(category.name)) {
+              state.pendingBlockCategories = state.pendingBlockCategories.filter(
+                (name) => name !== category.name
+              );
+            } else {
+              state.pendingBlockCategories.push(category.name);
+            }
+            renderBlockCategoryOptions();
+          });
+          container.appendChild(card);
+        }
+      }
+
+      function openBlockCategoryModal(blockIndex) {
+        const block = state.resultBlocks[blockIndex];
+        if (!block) return;
+        state.blockCategoryIndex = blockIndex;
+        state.pendingBlockCategories = [
+          ...(block.categoryNames?.length ? block.categoryNames : state.selectedCategories),
+        ];
+        renderBlockCategoryOptions();
+        $("blockCategoryModal").classList.add("open");
+      }
+
+      function closeBlockCategoryModal() {
+        $("blockCategoryModal").classList.remove("open");
+        state.blockCategoryIndex = -1;
+        state.pendingBlockCategories = [];
+      }
+
+      async function applyBlockCategories() {
+        const block = state.resultBlocks[state.blockCategoryIndex];
+        if (!block) return;
+        if (!state.pendingBlockCategories.length) {
+          setStatus("Escolha ao menos uma categoria para esta seção.", "error");
+          return;
+        }
+
+        $("applyBlockCategories").disabled = true;
+        try {
+          const categoryNames = [...state.pendingBlockCategories];
+          const sources = await sourcesForCategories(categoryNames);
+          if (!sources.length) {
+            throw new Error("Nenhuma fonte habilitada para essas categorias.");
+          }
+          const searchData = await fetchJSON("/2/editorSearch/", {
+            method: "POST",
+            body: JSON.stringify({
+              searchSettings: searchSettingsForSources(sources),
+              queries: [block.item.query],
+            }),
+          });
+          const bucket =
+            searchData.results?.[block.item.query.query]?.[block.item.query.cardType] || [];
+          const currentPage = block.page;
+          block.categoryNames = categoryNames;
+          block.ids = bucket;
+          block.collapsed = false;
+          await loadBlockPage(block, currentPage);
+          renderResults();
+          closeBlockCategoryModal();
+          setStatus(`Pesquisa ampliada para: ${categoryNames.join(", ")}`, "ok");
+        } finally {
+          $("applyBlockCategories").disabled = false;
+        }
       }
 
       function categoryHasUploader(category, uploader) {
@@ -1717,18 +1964,20 @@
         closeAddUploaderModal();
       }
 
-      function oldFrameCategory() {
+      function categoryByName(name) {
         return state.config.categories.find(
-          (category) => category.name === "OldFrame & Scan"
+          (category) => normalise(category.name) === normalise(name)
         );
       }
 
       function renderUploaderPanel() {
-        const category = oldFrameCategory();
+        const category = categoryByName(state.configuringCategoryName);
         const uploaders = category?.uploaders || [];
         const activeSet = new Set(
           (category?.activeUploaders || uploaders).map(normalise)
         );
+        $("uploaderPanel").querySelector("h2").textContent =
+          category?.name || "Uploaders";
         const listEl = $("uploaderList");
         listEl.innerHTML = "";
         for (const uploader of uploaders) {
@@ -1746,7 +1995,8 @@
         }
       }
 
-      function openUploaderPanel() {
+      function openUploaderPanel(categoryName) {
+        state.configuringCategoryName = categoryName || "OldFrame & Scan";
         renderUploaderPanel();
         $("categoryOptions").style.display = "none";
         $("uploaderPanel").classList.add("open");
@@ -1761,7 +2011,7 @@
       }
 
       async function saveUploaderSelection() {
-        const category = oldFrameCategory();
+        const category = categoryByName(state.configuringCategoryName);
         if (!category) return;
         category.activeUploaders = Array.from(
           $("uploaderList").querySelectorAll('input[type="checkbox"]:checked')
@@ -1790,6 +2040,12 @@
       $("search").addEventListener("click", searchCards);
       $("changeCategory").addEventListener("click", openCategoryModal);
       $("applyCategories").addEventListener("click", applyCategories);
+      $("cancelBlockCategories").addEventListener("click", closeBlockCategoryModal);
+      $("applyBlockCategories").addEventListener("click", () => {
+        applyBlockCategories().catch((error) =>
+          setStatus(error.message || String(error), "error")
+        );
+      });
       $("selectNoUploaders").addEventListener("click", () =>
         setUploaderCheckboxes(false)
       );
