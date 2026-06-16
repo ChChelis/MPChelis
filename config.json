@@ -1,0 +1,65 @@
+{
+  "backendURL": "https://mpcfill.com",
+  "categories": [
+    {
+      "name": "OldFrame & Scan",
+      "description": "Digitalizacoes e leiautes originais.",
+      "uploaders": [
+        "Coderanger",
+        "CompC",
+        "berndt_toast83",
+        "Coop",
+        "cooperaa",
+        "Hathwellcrisping",
+        "john prime",
+        "MrTeferi",
+        "Nelynes",
+        "PsilosX",
+        "RustyShackleford",
+        "TwoSheds",
+        "WarpDandy",
+        "Willie tanner",
+        "Warp daddy",
+        "chili_axe",
+        "ChilliAxe",
+        "stmilton"
+      ],
+      "activeUploaders": [
+        "Coderanger",
+        "CompC",
+        "berndt_toast83",
+        "Coop",
+        "cooperaa",
+        "Hathwellcrisping",
+        "john prime",
+        "MrTeferi",
+        "Nelynes",
+        "PsilosX",
+        "RustyShackleford",
+        "TwoSheds",
+        "WarpDandy",
+        "Willie tanner",
+        "Warp daddy",
+        "chili_axe",
+        "ChilliAxe",
+        "stmilton"
+      ]
+    },
+    {
+      "name": "Arte Livre",
+      "description": "Sem filtro de uploader.",
+      "uploaders": [],
+      "activeUploaders": []
+    },
+    {
+      "name": "FullArt",
+      "description": "Cartas full art.",
+      "uploaders": [
+        "Sliver of Slytherin"
+      ],
+      "activeUploaders": [
+        "Sliver of Slytherin"
+      ]
+    }
+  ]
+}

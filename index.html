@@ -1,0 +1,1862 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MPChelis XML Builder</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #1d252d;
+        --muted: #65717d;
+        --line: #d9dee5;
+        --accent: #0d6efd;
+        --accent-strong: #084eb5;
+        --danger: #b42318;
+        --ok: #147a45;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      aside {
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        padding: 20px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+      }
+
+      main {
+        padding: 20px;
+        min-width: 0;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      h2 {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      label {
+        color: #344150;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      textarea,
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 10px 11px;
+        outline: none;
+      }
+
+      textarea {
+        min-height: 190px;
+        resize: vertical;
+        line-height: 1.45;
+      }
+
+      textarea:focus,
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.14);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 9px 12px;
+        cursor: pointer;
+        min-height: 38px;
+      }
+
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      button.primary:hover {
+        background: var(--accent-strong);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+      }
+
+      .status {
+        min-height: 20px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .section {
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+      }
+
+      .selected-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .selected-item {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 9px;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        gap: 9px;
+        align-items: center;
+        background: #fbfcfd;
+      }
+
+      .selected-item img {
+        width: 42px;
+        height: 58px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: #e8ecf1;
+      }
+
+      .selected-item strong,
+      .card strong {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .icon-button {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .query-block {
+        margin-bottom: 28px;
+      }
+
+      .query-head {
+        align-items: end;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .pager {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 14px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .thumb {
+        display: block;
+        width: 100%;
+        aspect-ratio: 63 / 88;
+        object-fit: cover;
+        background: #e8ecf1;
+      }
+
+      .card-body {
+        padding: 10px;
+        display: grid;
+        gap: 7px;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .source-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .source-row .meta {
+        min-width: 0;
+      }
+
+      .small-button {
+        min-height: 28px;
+        padding: 4px 7px;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .xml-box {
+        min-height: 260px;
+        font-family:
+          "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono",
+          monospace;
+        font-size: 12px;
+        white-space: pre;
+      }
+
+      .empty {
+        background: var(--panel);
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        padding: 30px;
+        text-align: center;
+      }
+
+      .category-bar {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: #fbfcfd;
+        display: grid;
+        gap: 8px;
+      }
+
+      .category-bar strong {
+        display: block;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(20, 28, 36, 0.58);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      .modal-backdrop.open {
+        display: flex;
+      }
+
+      .modal {
+        width: min(720px, 100%);
+        background: var(--panel);
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        box-shadow: 0 24px 80px rgba(20, 28, 36, 0.22);
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .category-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .category-option {
+        text-align: left;
+        min-height: 106px;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .category-option.selected {
+        background: #233245;
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.14);
+      }
+
+      .category-option.selected .subtle {
+        color: #d7e2ef;
+      }
+
+      .category-check {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        flex: 0 0 auto;
+        accent-color: var(--accent);
+        pointer-events: none;
+      }
+
+      .category-option-content {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .category-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        display: grid;
+        gap: 0;
+        overflow: hidden;
+      }
+
+      .category-card .category-option {
+        border: 0;
+        border-radius: 0;
+        width: 100%;
+      }
+
+      .category-link {
+        border: 0;
+        border-top: 1px solid var(--line);
+        border-radius: 0;
+        color: var(--accent);
+        min-height: 34px;
+        padding: 7px 12px;
+        text-align: left;
+        text-decoration: underline;
+      }
+
+      .uploader-panel {
+        display: none;
+        gap: 12px;
+      }
+
+      .uploader-panel.open {
+        display: grid;
+      }
+
+      .uploader-list {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        max-height: min(420px, 50vh);
+        overflow: auto;
+        padding: 8px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .uploader-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 8px;
+        border-radius: 6px;
+      }
+
+      .uploader-row:hover {
+        background: #f2f5f8;
+      }
+
+      .uploader-row input {
+        width: auto;
+      }
+
+      .category-select-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .category-select-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .category-select-head {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+      }
+
+      .category-select-head input {
+        width: auto;
+        margin-top: 3px;
+      }
+
+      .category-refine {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        display: none;
+        gap: 4px;
+      }
+
+      .category-select-item.selected .category-refine {
+        display: grid;
+      }
+
+      .new-category-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        display: none;
+        gap: 10px;
+      }
+
+      .new-category-panel.open {
+        display: grid;
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 12px;
+        border-radius: 999px;
+        background: #e8ecf1;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        background: var(--accent);
+        transition: width 180ms ease;
+      }
+
+      .download-details {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfd;
+        padding: 10px;
+        display: grid;
+        gap: 6px;
+      }
+
+      .download-file {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 860px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        aside {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        main {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="stack">
+        <div class="stack">
+          <h1>MPChelis XML Builder</h1>
+          <p class="subtle">
+            Busque artes no MPCFill, escolha as thumbs e exporte um XML que o
+            MPCFill e o desktop tool aceitam.
+            <a href="/config.html">Configurar origem e uploaders</a>
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="decklist">Cartas</label>
+          <textarea
+            id="decklist"
+            spellcheck="false"
+            placeholder="1 Lightning Bolt&#10;4 Counterspell&#10;t:Soldier"
+          ></textarea>
+          <div class="subtle">
+            Use uma carta por linha. Prefixos aceitos: <b>t:</b> token,
+            <b>b:</b> cardback. Quantidade no início é preservada nos slots.
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="limit">Resultados por carta</label>
+          <select id="limit">
+            <option value="12">12</option>
+            <option value="24" selected>24</option>
+            <option value="48">48</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="search">Buscar artes</button>
+          <button id="clear">Limpar escolhas</button>
+        </div>
+        <div id="status" class="status"></div>
+
+        <div class="category-bar">
+          <div>
+            <span class="subtle">Categoria de busca</span>
+            <strong id="selectedCategoryLabel">Nenhuma selecionada</strong>
+          </div>
+          <button id="changeCategory" type="button">Trocar categoria</button>
+        </div>
+
+        <div class="section stack">
+          <h2>Escolhas</h2>
+          <div id="selected" class="selected-list">
+            <div class="empty">Nenhuma arte escolhida.</div>
+          </div>
+        </div>
+
+        <div class="section stack">
+          <h2>XML</h2>
+          <div class="actions">
+            <button id="copyXml">Copiar XML</button>
+            <button class="primary" id="downloadXml">Exportar XML</button>
+            <button id="downloadImages">Baixar imagens</button>
+          </div>
+          <textarea id="xml" class="xml-box" readonly></textarea>
+        </div>
+      </aside>
+
+      <main>
+        <div id="results" class="stack">
+          <div class="empty">
+            Digite uma lista de cartas e clique em Buscar artes.
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="categoryModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div>
+          <h2>Escolha a categoria de busca</h2>
+          <p class="subtle">
+            Essa escolha define quais resultados entram na pesquisa. Voce pode
+            trocar depois pelo botao na lateral.
+          </p>
+        </div>
+        <div id="categoryOptions" class="category-options"></div>
+        <div class="actions">
+          <button class="primary" id="applyCategories" type="button">
+            Usar categorias selecionadas
+          </button>
+        </div>
+        <div id="uploaderPanel" class="uploader-panel">
+          <div>
+            <h2>OldFrame & Scan</h2>
+            <p class="subtle">
+              Escolha quais uploaders desta categoria ficam ativos no filtro.
+            </p>
+          </div>
+          <div class="actions">
+            <button id="selectNoUploaders" type="button">Nenhum</button>
+            <button id="selectAllUploaders" type="button">Todos</button>
+          </div>
+          <div id="uploaderList" class="uploader-list"></div>
+          <div class="actions">
+            <button id="backToCategories" type="button">Voltar</button>
+            <button class="primary" id="saveUploaderSelection" type="button">
+              Salvar uploaders
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="downloadModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div>
+          <h2>Baixando imagens</h2>
+          <p class="subtle">
+            Os arquivos estao sendo gravados pelo servidor local. Mantenha esta
+            janela aberta ate concluir.
+          </p>
+        </div>
+        <div class="download-details">
+          <strong id="downloadPercent">0%</strong>
+          <div class="progress-track">
+            <div id="downloadProgressFill" class="progress-fill"></div>
+          </div>
+          <div class="subtle" id="downloadCount">0 de 0</div>
+          <div class="download-file" id="downloadCurrentFile">Aguardando...</div>
+          <div class="subtle" id="downloadCurrentPercent"></div>
+          <div class="subtle" id="downloadOutput"></div>
+        </div>
+        <div class="actions">
+          <button id="cancelDownload" type="button" disabled>Cancelar</button>
+          <button id="closeDownloadModal" type="button" disabled>Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="addUploaderModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div>
+          <h2>Adicionar uploader à categoria</h2>
+          <p class="subtle">
+            Uploader: <strong id="pendingUploaderName"></strong>
+          </p>
+        </div>
+        <div id="addUploaderCategories" class="category-select-list"></div>
+        <div class="actions">
+          <button id="showNewCategory" type="button">Adicionar nova categoria</button>
+        </div>
+        <div id="newCategoryPanel" class="new-category-panel">
+          <div class="field">
+            <label for="newCategoryName">Nome</label>
+            <input id="newCategoryName" />
+          </div>
+          <div class="field">
+            <label for="newCategoryDescription">Pequena descrição</label>
+            <input id="newCategoryDescription" />
+          </div>
+          <div class="actions">
+            <button id="cancelNewCategory" type="button">Cancelar</button>
+            <button class="primary" id="createNewCategory" type="button">
+              Criar categoria
+            </button>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="closeAddUploader" type="button">Fechar</button>
+          <button class="primary" id="saveUploaderToCategories" type="button">
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        config: {
+          backendURL: "https://mpcfill.com",
+          categories: [
+            { name: "OldFrame & Scan", uploaders: [] },
+            { name: "Arte Livre", uploaders: [] },
+          ],
+        },
+        selectedCategories: [],
+        sources: [],
+        resultBlocks: [],
+        selections: [],
+        docs: new Map(),
+        downloadJobId: null,
+        downloadPollTimer: null,
+        pendingUploader: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $("status");
+      const resultsEl = $("results");
+      const selectedEl = $("selected");
+      const xmlEl = $("xml");
+
+      const cardTypePrefixes = { "": "CARD", t: "TOKEN", b: "CARDBACK" };
+      const reversedPrefixes = { CARD: "", TOKEN: "t:", CARDBACK: "b:" };
+
+      function setStatus(message, kind = "") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${kind}`.trim();
+      }
+
+      function apiURL(path) {
+        const apiBase =
+          window.location.protocol === "file:"
+            ? "http://localhost:8080/api"
+            : "/api";
+        return `${apiBase}${path}`;
+      }
+
+      function configURL() {
+        return window.location.protocol === "file:"
+          ? "http://localhost:8080/config"
+          : "/config";
+      }
+
+      async function loadConfig() {
+        const response = await fetch(configURL(), { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const config = await response.json();
+        state.config = {
+          backendURL: config.backendURL || "https://mpcfill.com",
+          categories: getConfigCategories(config),
+        };
+      }
+
+      function getConfigCategories(config) {
+        if (Array.isArray(config.categories)) {
+          return config.categories.map((category) => ({
+            name: category.name,
+            description: category.description || "",
+            uploaders: Array.isArray(category.uploaders)
+              ? category.uploaders
+              : [],
+            activeUploaders: Array.isArray(category.activeUploaders)
+              ? category.activeUploaders
+              : Array.isArray(category.uploaders)
+                ? category.uploaders
+                : [],
+          }));
+        }
+        return [
+          {
+            name: "OldFrame & Scan",
+            description: "",
+            uploaders: Array.isArray(config.uploaders) ? config.uploaders : [],
+            activeUploaders: Array.isArray(config.uploaders)
+              ? config.uploaders
+              : [],
+          },
+          {
+            name: "Arte Livre",
+            description: "",
+            uploaders: [],
+            activeUploaders: [],
+          },
+        ];
+      }
+
+      function selectedCategoryObjects() {
+        return state.config.categories.filter((category) =>
+          state.selectedCategories.includes(category.name)
+        );
+      }
+
+      function activeUploaders() {
+        return Array.from(
+          new Set(
+            selectedCategoryObjects()
+              .filter((category) => category.uploaders?.length)
+              .flatMap((category) =>
+                Array.isArray(category.activeUploaders)
+                  ? category.activeUploaders
+                  : category.uploaders
+              )
+          )
+        );
+      }
+
+      function hasUnfilteredCategory() {
+        return selectedCategoryObjects().some(
+          (category) => !category.uploaders?.length
+        );
+      }
+
+      function normalise(value) {
+        return String(value || "").trim().toLowerCase();
+      }
+
+      function uploaderAllowed(value) {
+        if (hasUnfilteredCategory()) return true;
+        const uploaders = activeUploaders().map(normalise).filter(Boolean);
+        if (!uploaders.length) return false;
+        const candidate = normalise(value);
+        return uploaders.some((uploader) => candidate.includes(uploader));
+      }
+
+      function sourceAllowed(source) {
+        return [
+          source.name,
+          source.key,
+          source.description,
+          source.sourceVerbose,
+          source.sourceName,
+          source.source,
+        ].some(uploaderAllowed);
+      }
+
+      function docAllowed(doc) {
+        return [
+          doc.sourceVerbose,
+          doc.sourceName,
+          doc.source,
+          doc.name,
+        ].some(uploaderAllowed);
+      }
+
+      function sanitiseWhitespace(text) {
+        return text.replace(/ +(?= )/g, "").trim();
+      }
+
+      function processQuery(query) {
+        return sanitiseWhitespace(
+          query
+            .toLowerCase()
+            .trim()
+            .replace(/[~`!@#$%^&*(){}\[\];:"'<,.>?/\\|_+=]/g, "")
+        );
+      }
+
+      function parseLine(line) {
+        const trimmed = line.replace(/\s+/g, " ").trim();
+        if (!trimmed) return null;
+        const quantityMatch = trimmed.match(/^([0-9]+x?\s+)?(.*)$/i);
+        const quantity = Number.parseInt(
+          (quantityMatch?.[1] || "1").toLowerCase().replace("x", "").trim(),
+          10
+        );
+        const raw = quantityMatch?.[2] || trimmed;
+        const queryMatch = raw.match(/^(?:(t|b):)?(.*?)(?:\((.+)\)(.*))?$/i);
+        const prefix = (queryMatch?.[1] || "").toLowerCase();
+        return {
+          rawLine: line,
+          quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+          query: {
+            cardType: cardTypePrefixes[prefix] || "CARD",
+            query: processQuery(queryMatch?.[2] || raw),
+            expansionCode: queryMatch?.[3]?.toUpperCase().trim() || undefined,
+            collectorNumber: queryMatch?.[4]?.trim() || undefined,
+          },
+        };
+      }
+
+      async function fetchJSON(path, options = {}) {
+        const response = await fetch(apiURL(path), {
+          ...options,
+          headers: {
+            "content-type": "application/json",
+            ...(options.headers || {}),
+          },
+        });
+        const text = await response.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          throw new Error(text || `HTTP ${response.status}`);
+        }
+        if (!response.ok) {
+          throw new Error(data.message || data.error || `HTTP ${response.status}`);
+        }
+        return data;
+      }
+
+      async function ensureSources() {
+        if (state.sources.length) return;
+        const data = await fetchJSON("/2/sources/");
+        state.sources = Object.values(data.results || {})
+          .filter(sourceAllowed)
+          .map((source) => [source.pk, true]);
+      }
+
+      function defaultSearchSettings() {
+        return {
+          searchTypeSettings: { fuzzySearch: true, filterCardbacks: false },
+          sourceSettings: { sources: state.sources },
+          filterSettings: {
+            minimumDPI: 0,
+            maximumDPI: 1500,
+            maximumSize: 30,
+            languages: [],
+            includesTags: [],
+            excludesTags: ["NSFW"],
+          },
+        };
+      }
+
+      async function searchCards() {
+        if (!state.selectedCategories.length) {
+          openCategoryModal();
+          setStatus("Escolha ao menos uma categoria antes de pesquisar.", "error");
+          return;
+        }
+
+        const parsed = $("decklist").value
+          .split(/\r?\n/)
+          .map(parseLine)
+          .filter(Boolean);
+
+        if (!parsed.length) {
+          setStatus("Digite pelo menos uma carta.", "error");
+          return;
+        }
+
+        $("search").disabled = true;
+        setStatus("Carregando fontes e buscando no MPCFill...");
+        resultsEl.innerHTML = "";
+
+        try {
+          await loadConfig();
+          state.selectedCategories = state.selectedCategories.filter((name) =>
+            state.config.categories.some((category) => category.name === name)
+          );
+          if (!state.selectedCategories.length) {
+            updateCategoryLabel();
+            openCategoryModal();
+            throw new Error("Escolha ao menos uma categoria antes de pesquisar.");
+          }
+          state.sources = [];
+          await ensureSources();
+          if (!state.sources.length) {
+            throw new Error(
+              "Nenhuma fonte habilitada para os uploaders configurados."
+            );
+          }
+          const searchData = await fetchJSON("/2/editorSearch/", {
+            method: "POST",
+            body: JSON.stringify({
+              searchSettings: defaultSearchSettings(),
+              queries: parsed.map((item) => item.query),
+            }),
+          });
+
+          const pageSize = Number.parseInt($("limit").value, 10);
+          const blocks = [];
+
+          for (const item of parsed) {
+            const bucket =
+              searchData.results?.[item.query.query]?.[item.query.cardType] || [];
+            const block = {
+              item,
+              ids: bucket,
+              page: 0,
+              pageSize,
+              docs: [],
+            };
+            await loadBlockPage(block, 0);
+            blocks.push(block);
+          }
+
+          state.resultBlocks = blocks;
+          renderResults();
+          setStatus("Busca concluída.", "ok");
+        } catch (error) {
+          const message =
+            error instanceof TypeError && String(error.message).includes("fetch")
+              ? "Nao foi possivel conectar ao proxy local. Rode: node server.mjs e abra http://localhost:8080"
+              : error.message || String(error);
+          setStatus(message, "error");
+        } finally {
+          $("search").disabled = false;
+        }
+      }
+
+      async function loadBlockPage(block, page) {
+        const maxPage = Math.max(0, Math.ceil(block.ids.length / block.pageSize) - 1);
+        const safePage = Math.max(0, Math.min(maxPage, page));
+        const ids = block.ids.slice(
+          safePage * block.pageSize,
+          safePage * block.pageSize + block.pageSize
+        );
+        const docs = ids.length
+          ? (
+              await fetchJSON("/2/cards/", {
+                method: "POST",
+                body: JSON.stringify({ cardIdentifiers: ids }),
+              })
+            ).results || {}
+          : {};
+        const filteredDocs = ids.map((id) => docs[id]).filter(Boolean).filter(docAllowed);
+        filteredDocs.forEach((doc) => state.docs.set(doc.identifier, doc));
+        block.page = safePage;
+        block.docs = filteredDocs;
+      }
+
+      async function changeBlockPage(index, delta) {
+        const block = state.resultBlocks[index];
+        if (!block) return;
+        await loadBlockPage(block, block.page + delta);
+        renderResults();
+      }
+
+      function renderResults() {
+        const blocks = state.resultBlocks;
+        resultsEl.innerHTML = "";
+
+        if (!blocks.length || !blocks.some((block) => block.ids.length)) {
+          resultsEl.innerHTML =
+            '<div class="empty">Nenhum resultado encontrado.</div>';
+          return;
+        }
+
+        for (const [blockIndex, block] of blocks.entries()) {
+          const totalPages = Math.max(1, Math.ceil(block.ids.length / block.pageSize));
+          const section = document.createElement("section");
+          section.className = "query-block";
+          section.innerHTML = `
+            <div class="query-head">
+              <div>
+                <h2>${escapeHTML(block.item.rawLine)}</h2>
+                <div class="subtle">${block.ids.length} resultado(s) no site original</div>
+              </div>
+            </div>
+            <div class="grid"></div>
+            ${
+              block.ids.length > block.pageSize
+                ? `<div class="pager">
+                    <button type="button" data-page-delta="-1" ${
+                      block.page === 0 ? "disabled" : ""
+                    }>Anterior</button>
+                    <span class="subtle">Página ${block.page + 1} de ${totalPages}</span>
+                    <button type="button" data-page-delta="1" ${
+                      block.page + 1 >= totalPages ? "disabled" : ""
+                    }>Próxima</button>
+                  </div>`
+                : ""
+            }
+          `;
+          section.querySelectorAll("[data-page-delta]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const delta = Number.parseInt(button.dataset.pageDelta, 10);
+              button.disabled = true;
+              changeBlockPage(blockIndex, delta).catch((error) =>
+                setStatus(error.message || String(error), "error")
+              );
+            });
+          });
+
+          const grid = section.querySelector(".grid");
+          if (!block.docs.length) {
+            grid.innerHTML = '<div class="empty">Sem resultados.</div>';
+          }
+
+          for (const doc of block.docs) {
+            const uploader =
+              doc.sourceVerbose || doc.sourceName || doc.source || "Fonte desconhecida";
+            const card = document.createElement("article");
+            card.className = "card";
+            card.innerHTML = `
+              <img class="thumb" loading="lazy" src="${escapeAttr(
+                doc.mediumThumbnailUrl || doc.smallThumbnailUrl || ""
+              )}" alt="${escapeAttr(doc.name)}" />
+              <div class="card-body">
+                <strong title="${escapeAttr(doc.name)}">${escapeHTML(doc.name)}</strong>
+                <div class="source-row">
+                  <div class="meta">${escapeHTML(uploader)}<br>${escapeHTML(doc.dpi || "?")} DPI · ${escapeHTML(doc.language || "")}</div>
+                  <button class="small-button" type="button">Adicionar à categoria</button>
+                </div>
+                <button class="primary">Escolher</button>
+              </div>
+            `;
+            const buttons = card.querySelectorAll("button");
+            buttons[0].addEventListener("click", () => {
+              openAddUploaderModal(uploader);
+            });
+            buttons[1].addEventListener("click", () => {
+              addSelection(block.item, doc);
+            });
+            grid.appendChild(card);
+          }
+
+          resultsEl.appendChild(section);
+        }
+      }
+
+      function addSelection(item, doc) {
+        state.selections.push({
+          input: item.rawLine,
+          quantity: item.quantity,
+          query: item.query.query,
+          doc,
+        });
+        state.docs.set(doc.identifier, doc);
+        renderSelections();
+        updateXML();
+      }
+
+      function renderSelections() {
+        selectedEl.innerHTML = "";
+        if (!state.selections.length) {
+          selectedEl.innerHTML = '<div class="empty">Nenhuma arte escolhida.</div>';
+          return;
+        }
+
+        state.selections.forEach((selection, index) => {
+          const item = document.createElement("div");
+          item.className = "selected-item";
+          item.innerHTML = `
+            <img src="${escapeAttr(
+              selection.doc.smallThumbnailUrl || selection.doc.mediumThumbnailUrl || ""
+            )}" alt="" />
+            <div>
+              <strong title="${escapeAttr(selection.doc.name)}">${escapeHTML(selection.doc.name)}</strong>
+              <div class="meta">${selection.quantity}x · ${escapeHTML(selection.input)}</div>
+            </div>
+            <button class="icon-button" title="Remover" aria-label="Remover">×</button>
+          `;
+          item.querySelector("button").addEventListener("click", () => {
+            state.selections.splice(index, 1);
+            renderSelections();
+            updateXML();
+          });
+          selectedEl.appendChild(item);
+        });
+      }
+
+      function generateXML() {
+        const quantity = state.selections.reduce(
+          (sum, selection) => sum + selection.quantity,
+          0
+        );
+        const slotsById = new Map();
+        let slot = 0;
+
+        for (const selection of state.selections) {
+          const id = selection.doc.identifier;
+          if (!slotsById.has(id)) slotsById.set(id, []);
+          for (let i = 0; i < selection.quantity; i += 1) {
+            slotsById.get(id).push(slot);
+            slot += 1;
+          }
+        }
+
+        const lines = [
+          "<order>",
+          "  <details>",
+          `    <quantity>${quantity}</quantity>`,
+          "    <stock>(S30) Standard Smooth</stock>",
+          "    <foil>false</foil>",
+          "  </details>",
+        ];
+
+        if (slotsById.size) {
+          lines.push("  <fronts>");
+          for (const [id, slots] of slotsById.entries()) {
+            const doc = state.docs.get(id);
+            if (!doc) continue;
+            lines.push("    <card>");
+            lines.push(`      <id>${escapeXML(id)}</id>`);
+            lines.push(
+              `      <sourceType>${escapeXML(doc.sourceType || "Google Drive")}</sourceType>`
+            );
+            lines.push(`      <slots>${slots.join(",")}</slots>`);
+            lines.push(
+              `      <name>${escapeXML(`${doc.name}.${doc.extension || "png"}`)}</name>`
+            );
+            lines.push(
+              `      <query>${escapeXML(
+                `${reversedPrefixes[doc.cardType] || ""}${doc.searchq || ""}`
+              )}</query>`
+            );
+            lines.push("    </card>");
+          }
+          lines.push("  </fronts>");
+        }
+
+        lines.push("  <cardback></cardback>");
+        lines.push("</order>");
+        return lines.join("\n");
+      }
+
+      function updateXML() {
+        xmlEl.value = generateXML();
+      }
+
+      function downloadXML() {
+        updateXML();
+        const blob = new Blob([xmlEl.value], { type: "text/xml;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "cards.xml";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      async function copyXML() {
+        updateXML();
+        await navigator.clipboard.writeText(xmlEl.value);
+        setStatus("XML copiado.", "ok");
+      }
+
+      async function downloadImages() {
+        const identifiers = Array.from(
+          new Set(
+            state.selections
+              .map((selection) => selection.doc?.identifier)
+              .filter(Boolean)
+          )
+        );
+
+        if (!identifiers.length) {
+          setStatus("Escolha pelo menos uma arte antes de baixar.", "error");
+          return;
+        }
+
+        $("downloadImages").disabled = true;
+        openDownloadModal();
+        updateDownloadModal({
+          percent: 0,
+          completed: 0,
+          total: identifiers.length,
+          currentFile: "Preparando download...",
+          currentPercent: null,
+          outputDirectory: "",
+          canCancel: false,
+          status: "running",
+        });
+        setStatus(`Baixando ${identifiers.length} imagem(ns) no servidor local...`);
+
+        try {
+          const response = await fetch(
+            window.location.protocol === "file:"
+              ? "http://localhost:8080/download-images"
+              : "/download-images",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ identifiers }),
+            }
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || `HTTP ${response.status}`);
+          }
+          state.downloadJobId = data.id;
+          updateDownloadModal(data);
+          pollDownloadJob();
+        } catch (error) {
+          const message =
+            error instanceof TypeError && String(error.message).includes("fetch")
+              ? "Nao foi possivel conectar ao servidor local. Rode: node server.mjs"
+              : error.message || String(error);
+          setStatus(message, "error");
+          updateDownloadModal({
+            percent: 0,
+            completed: 0,
+            total: identifiers.length,
+            currentFile: message,
+            currentPercent: null,
+            outputDirectory: "",
+            canCancel: false,
+            status: "failed",
+          });
+          $("closeDownloadModal").disabled = false;
+        } finally {
+          $("downloadImages").disabled = false;
+        }
+      }
+
+      function downloadEndpoint(action = "", id = "") {
+        const base =
+          window.location.protocol === "file:"
+            ? "http://localhost:8080/download-images"
+            : "/download-images";
+        const params = new URLSearchParams();
+        if (id) params.set("id", id);
+        if (action) params.set("action", action);
+        return params.toString() ? `${base}?${params}` : base;
+      }
+
+      function openDownloadModal() {
+        $("downloadModal").classList.add("open");
+        $("closeDownloadModal").disabled = true;
+        $("cancelDownload").disabled = true;
+      }
+
+      function closeDownloadModal() {
+        $("downloadModal").classList.remove("open");
+      }
+
+      function updateDownloadModal(job) {
+        const percent = Number.isFinite(job.percent) ? job.percent : 0;
+        $("downloadPercent").textContent = `${percent}%`;
+        $("downloadProgressFill").style.width = `${Math.max(
+          0,
+          Math.min(100, percent)
+        )}%`;
+        $("downloadCount").textContent = `${job.completed || 0} de ${
+          job.total || 0
+        }`;
+        $("downloadCurrentFile").textContent =
+          job.currentFile || "Aguardando...";
+        $("downloadCurrentPercent").textContent =
+          job.currentPercent == null
+            ? ""
+            : `Arquivo atual: ${job.currentPercent}%`;
+        $("downloadOutput").textContent = job.outputDirectory
+          ? `Destino: ${job.outputDirectory}`
+          : "";
+        $("cancelDownload").disabled = !job.canCancel;
+        const finished = [
+          "completed",
+          "completed_with_errors",
+          "failed",
+          "cancelled",
+        ].includes(job.status);
+        $("closeDownloadModal").disabled = !finished;
+      }
+
+      async function pollDownloadJob() {
+        if (!state.downloadJobId) return;
+        window.clearTimeout(state.downloadPollTimer);
+
+        try {
+          const response = await fetch(downloadEndpoint("", state.downloadJobId), {
+            cache: "no-store",
+          });
+          const job = await response.json();
+          if (!response.ok) {
+            throw new Error(job.error || `HTTP ${response.status}`);
+          }
+          updateDownloadModal(job);
+
+          if (
+            ["completed", "completed_with_errors", "failed", "cancelled"].includes(
+              job.status
+            )
+          ) {
+            const failedMessage = job.failed?.length
+              ? ` ${job.failed.length} falharam.`
+              : "";
+            const statusMessage =
+              job.status === "cancelled"
+                ? "Download cancelado."
+                : job.status === "failed"
+                  ? `Download falhou: ${job.error || "erro desconhecido"}`
+                  : `Imagens baixadas em: ${job.outputDirectory}.${failedMessage}`;
+            setStatus(
+              statusMessage,
+              job.status === "completed" ? "ok" : "error"
+            );
+            return;
+          }
+
+          state.downloadPollTimer = window.setTimeout(pollDownloadJob, 800);
+        } catch (error) {
+          setStatus(error.message || String(error), "error");
+          $("closeDownloadModal").disabled = false;
+        }
+      }
+
+      async function cancelDownload() {
+        if (!state.downloadJobId) return;
+        $("cancelDownload").disabled = true;
+        const response = await fetch(
+          downloadEndpoint("cancel", state.downloadJobId),
+          { method: "POST" }
+        );
+        const job = await response.json();
+        if (!response.ok) {
+          setStatus(job.error || `HTTP ${response.status}`, "error");
+          return;
+        }
+        updateDownloadModal(job);
+      }
+
+      function escapeHTML(value) {
+        return String(value ?? "").replace(
+          /[&<>"']/g,
+          (char) =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[
+              char
+            ]
+        );
+      }
+
+      function escapeAttr(value) {
+        return escapeHTML(value).replace(/`/g, "&#096;");
+      }
+
+      function escapeXML(value) {
+        return escapeHTML(value);
+      }
+
+      function escapeSelector(value) {
+        if (window.CSS?.escape) return CSS.escape(value);
+        return String(value).replace(/["\\]/g, "\\$&");
+      }
+
+      function renderCategoryOptions() {
+        const optionsEl = $("categoryOptions");
+        optionsEl.innerHTML = "";
+        for (const category of state.config.categories) {
+          const uploaders = Array.isArray(category.uploaders)
+            ? category.uploaders
+            : [];
+          const activeCount = Array.isArray(category.activeUploaders)
+            ? category.activeUploaders.length
+            : uploaders.length;
+          const card = document.createElement("div");
+          card.className = "category-card";
+          const button = document.createElement("button");
+          button.type = "button";
+          const selected = state.selectedCategories.includes(category.name);
+          button.className = `category-option ${
+            selected ? "selected" : ""
+          }`.trim();
+          button.innerHTML = `
+            <input class="category-check" type="checkbox" ${
+              selected ? "checked" : ""
+            } tabindex="-1" aria-hidden="true" />
+            <span class="category-option-content">
+              <strong>${escapeHTML(category.name)}</strong>
+              <span class="subtle">${
+                uploaders.length
+                  ? `${activeCount}/${uploaders.length} uploader(s) ativos`
+                  : "Sem filtro de uploader"
+              }</span>
+            </span>
+          `;
+          button.addEventListener("click", () => toggleCategory(category.name));
+          card.appendChild(button);
+          if (category.name === "OldFrame & Scan") {
+            const configButton = document.createElement("button");
+            configButton.type = "button";
+            configButton.className = "category-link";
+            configButton.textContent = "Configurar uploaders";
+            configButton.addEventListener("click", openUploaderPanel);
+            card.appendChild(configButton);
+          }
+          optionsEl.appendChild(card);
+        }
+      }
+
+      function updateCategoryLabel() {
+        $("selectedCategoryLabel").textContent =
+          state.selectedCategories.length
+            ? state.selectedCategories.join(", ")
+            : "Nenhuma selecionada";
+      }
+
+      function openCategoryModal() {
+        renderCategoryOptions();
+        $("categoryOptions").style.display = "";
+        $("uploaderPanel").classList.remove("open");
+        $("categoryModal").classList.add("open");
+      }
+
+      function closeCategoryModal() {
+        $("categoryModal").classList.remove("open");
+      }
+
+      function toggleCategory(categoryName) {
+        if (state.selectedCategories.includes(categoryName)) {
+          state.selectedCategories = state.selectedCategories.filter(
+            (name) => name !== categoryName
+          );
+        } else {
+          state.selectedCategories.push(categoryName);
+        }
+        renderCategoryOptions();
+      }
+
+      function applyCategories() {
+        if (!state.selectedCategories.length) {
+          setStatus("Escolha ao menos uma categoria.", "error");
+          return;
+        }
+        state.sources = [];
+        state.resultBlocks = [];
+        resultsEl.innerHTML =
+          '<div class="empty">Digite uma lista de cartas e clique em Buscar artes.</div>';
+        updateCategoryLabel();
+        closeCategoryModal();
+        setStatus(`Categorias selecionadas: ${state.selectedCategories.join(", ")}`, "ok");
+      }
+
+      function categoryHasUploader(category, uploader) {
+        return (category.uploaders || []).some(
+          (item) => normalise(item) === normalise(uploader)
+        );
+      }
+
+      function addUniqueUploader(list, uploader) {
+        if (!list.some((item) => normalise(item) === normalise(uploader))) {
+          list.push(uploader);
+        }
+      }
+
+      function openAddUploaderModal(uploader) {
+        state.pendingUploader = uploader;
+        $("pendingUploaderName").textContent = uploader;
+        $("newCategoryName").value = "";
+        $("newCategoryDescription").value = "";
+        $("newCategoryPanel").classList.remove("open");
+        renderAddUploaderCategories();
+        $("addUploaderModal").classList.add("open");
+      }
+
+      function closeAddUploaderModal() {
+        $("addUploaderModal").classList.remove("open");
+        state.pendingUploader = null;
+      }
+
+      function renderAddUploaderCategories() {
+        const container = $("addUploaderCategories");
+        const uploader = state.pendingUploader;
+        container.innerHTML = "";
+
+        for (const category of state.config.categories) {
+          const uploaders = category.uploaders || [];
+          const categoryAlreadyHasUploader = categoryHasUploader(category, uploader);
+          const activeSet = new Set(
+            (category.activeUploaders || uploaders).map(normalise)
+          );
+          if (categoryAlreadyHasUploader) activeSet.add(normalise(uploader));
+
+          const item = document.createElement("div");
+          item.className = `category-select-item ${
+            categoryAlreadyHasUploader ? "selected" : ""
+          }`.trim();
+          item.innerHTML = `
+            <label class="category-select-head">
+              <input type="checkbox" data-category="${escapeAttr(
+                category.name
+              )}" ${categoryAlreadyHasUploader ? "checked" : ""} />
+              <span>
+                <strong>${escapeHTML(category.name)}</strong>
+                <span class="subtle">${escapeHTML(
+                  category.description || "Sem descrição."
+                )}</span>
+              </span>
+            </label>
+            <div class="category-refine"></div>
+          `;
+
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          const refine = item.querySelector(".category-refine");
+          const refinedUploaders = Array.from(
+            new Set([...uploaders, uploader].filter(Boolean))
+          );
+
+          if (refinedUploaders.length > 1) {
+            refine.innerHTML = `<div class="subtle">Uploaders ativos nesta categoria</div>`;
+            for (const refinedUploader of refinedUploaders) {
+              const row = document.createElement("label");
+              row.className = "uploader-row";
+              row.innerHTML = `
+                <input
+                  type="checkbox"
+                  data-refine-category="${escapeAttr(category.name)}"
+                  value="${escapeAttr(refinedUploader)}"
+                  ${activeSet.has(normalise(refinedUploader)) ? "checked" : ""}
+                />
+                <span>${escapeHTML(refinedUploader)}</span>
+              `;
+              refine.appendChild(row);
+            }
+          } else {
+            refine.innerHTML =
+              '<div class="subtle">Esta categoria ficará com este uploader ativo.</div>';
+          }
+
+          checkbox.addEventListener("change", () => {
+            item.classList.toggle("selected", checkbox.checked);
+          });
+
+          container.appendChild(item);
+        }
+      }
+
+      async function createNewCategory() {
+        const name = $("newCategoryName").value.trim();
+        const description = $("newCategoryDescription").value.trim();
+        if (!name) {
+          setStatus("Informe o nome da nova categoria.", "error");
+          return;
+        }
+        if (
+          state.config.categories.some(
+            (category) => normalise(category.name) === normalise(name)
+          )
+        ) {
+          setStatus("Essa categoria já existe.", "error");
+          return;
+        }
+        state.config.categories.push({
+          name,
+          description,
+          uploaders: [],
+          activeUploaders: [],
+        });
+        await saveConfigObject();
+        $("newCategoryPanel").classList.remove("open");
+        $("newCategoryName").value = "";
+        $("newCategoryDescription").value = "";
+        renderAddUploaderCategories();
+        setStatus("Categoria criada. Selecione-a para adicionar o uploader.", "ok");
+      }
+
+      async function saveConfigObject() {
+        const response = await fetch(configURL(), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(state.config),
+        });
+        const saved = await response.json();
+        if (!response.ok) {
+          throw new Error(saved.error || `HTTP ${response.status}`);
+        }
+        state.config = {
+          backendURL: saved.backendURL || state.config.backendURL,
+          categories: getConfigCategories(saved),
+        };
+        state.sources = [];
+      }
+
+      async function saveUploaderToCategories() {
+        const uploader = state.pendingUploader;
+        if (!uploader) return;
+        const selectedNames = Array.from(
+          $("addUploaderCategories").querySelectorAll(
+            '.category-select-head input[type="checkbox"]:checked'
+          )
+        ).map((input) => input.dataset.category);
+
+        if (!selectedNames.length) {
+          setStatus("Selecione pelo menos uma categoria.", "error");
+          return;
+        }
+
+        for (const category of state.config.categories) {
+          if (!selectedNames.includes(category.name)) continue;
+          category.uploaders = category.uploaders || [];
+          category.activeUploaders = category.activeUploaders || [];
+          addUniqueUploader(category.uploaders, uploader);
+
+          const refinedChecked = Array.from(
+            $("addUploaderCategories").querySelectorAll(
+              `input[data-refine-category="${escapeSelector(category.name)}"]:checked`
+            )
+          ).map((input) => input.value);
+
+          category.activeUploaders =
+            refinedChecked.length > 0
+              ? refinedChecked
+              : Array.from(
+                  new Set([...(category.activeUploaders || []), uploader])
+                );
+        }
+
+        await saveConfigObject();
+        renderCategoryOptions();
+        setStatus(`${uploader} adicionado às categorias selecionadas.`, "ok");
+        closeAddUploaderModal();
+      }
+
+      function oldFrameCategory() {
+        return state.config.categories.find(
+          (category) => category.name === "OldFrame & Scan"
+        );
+      }
+
+      function renderUploaderPanel() {
+        const category = oldFrameCategory();
+        const uploaders = category?.uploaders || [];
+        const activeSet = new Set(
+          (category?.activeUploaders || uploaders).map(normalise)
+        );
+        const listEl = $("uploaderList");
+        listEl.innerHTML = "";
+        for (const uploader of uploaders) {
+          const row = document.createElement("label");
+          row.className = "uploader-row";
+          row.innerHTML = `
+            <input
+              type="checkbox"
+              value="${escapeAttr(uploader)}"
+              ${activeSet.has(normalise(uploader)) ? "checked" : ""}
+            />
+            <span>${escapeHTML(uploader)}</span>
+          `;
+          listEl.appendChild(row);
+        }
+      }
+
+      function openUploaderPanel() {
+        renderUploaderPanel();
+        $("categoryOptions").style.display = "none";
+        $("uploaderPanel").classList.add("open");
+      }
+
+      function setUploaderCheckboxes(checked) {
+        $("uploaderList")
+          .querySelectorAll('input[type="checkbox"]')
+          .forEach((input) => {
+            input.checked = checked;
+          });
+      }
+
+      async function saveUploaderSelection() {
+        const category = oldFrameCategory();
+        if (!category) return;
+        category.activeUploaders = Array.from(
+          $("uploaderList").querySelectorAll('input[type="checkbox"]:checked')
+        ).map((input) => input.value);
+
+        const response = await fetch(configURL(), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(state.config),
+        });
+        const saved = await response.json();
+        if (!response.ok) {
+          throw new Error(saved.error || `HTTP ${response.status}`);
+        }
+        state.config = {
+          backendURL: saved.backendURL || state.config.backendURL,
+          categories: getConfigCategories(saved),
+        };
+        state.sources = [];
+        renderCategoryOptions();
+        $("categoryOptions").style.display = "";
+        $("uploaderPanel").classList.remove("open");
+        setStatus("Uploaders ativos atualizados.", "ok");
+      }
+
+      $("search").addEventListener("click", searchCards);
+      $("changeCategory").addEventListener("click", openCategoryModal);
+      $("applyCategories").addEventListener("click", applyCategories);
+      $("selectNoUploaders").addEventListener("click", () =>
+        setUploaderCheckboxes(false)
+      );
+      $("selectAllUploaders").addEventListener("click", () =>
+        setUploaderCheckboxes(true)
+      );
+      $("backToCategories").addEventListener("click", () => {
+        $("categoryOptions").style.display = "";
+        $("uploaderPanel").classList.remove("open");
+      });
+      $("saveUploaderSelection").addEventListener("click", () => {
+        saveUploaderSelection().catch((error) =>
+          setStatus(error.message || String(error), "error")
+        );
+      });
+      $("closeAddUploader").addEventListener("click", closeAddUploaderModal);
+      $("showNewCategory").addEventListener("click", () => {
+        $("newCategoryPanel").classList.add("open");
+        $("newCategoryName").focus();
+      });
+      $("cancelNewCategory").addEventListener("click", () => {
+        $("newCategoryPanel").classList.remove("open");
+      });
+      $("createNewCategory").addEventListener("click", () => {
+        createNewCategory().catch((error) =>
+          setStatus(error.message || String(error), "error")
+        );
+      });
+      $("saveUploaderToCategories").addEventListener("click", () => {
+        saveUploaderToCategories().catch((error) =>
+          setStatus(error.message || String(error), "error")
+        );
+      });
+      $("decklist").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          searchCards();
+        }
+      });
+      $("clear").addEventListener("click", () => {
+        state.selections = [];
+        renderSelections();
+        updateXML();
+        setStatus("Escolhas limpas.");
+      });
+      $("copyXml").addEventListener("click", copyXML);
+      $("downloadXml").addEventListener("click", downloadXML);
+      $("downloadImages").addEventListener("click", downloadImages);
+      $("cancelDownload").addEventListener("click", () => {
+        cancelDownload().catch((error) =>
+          setStatus(error.message || String(error), "error")
+        );
+      });
+      $("closeDownloadModal").addEventListener("click", closeDownloadModal);
+      loadConfig()
+        .then(() => {
+          renderCategoryOptions();
+          openCategoryModal();
+          updateCategoryLabel();
+        })
+        .catch((error) => {
+          setStatus(
+            `Nao foi possivel carregar a configuracao. Rode node server.mjs. ${error.message}`,
+            "error"
+          );
+        });
+      updateXML();
+    </script>
+  </body>
+</html>

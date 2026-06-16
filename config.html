@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuracao MPChelis</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #1d252d;
+        --muted: #65717d;
+        --line: #d9dee5;
+        --accent: #0d6efd;
+        --accent-strong: #084eb5;
+        --danger: #b42318;
+        --ok: #147a45;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      label {
+        color: #344150;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 10px 11px;
+        font: inherit;
+        outline: none;
+      }
+
+      textarea {
+        min-height: 180px;
+        resize: vertical;
+        line-height: 1.45;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.14);
+      }
+
+      button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 9px 12px;
+        cursor: pointer;
+        min-height: 38px;
+        font: inherit;
+      }
+
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      button.primary:hover {
+        background: var(--accent-strong);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .subtle,
+      .status {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stack">
+      <div class="stack">
+        <a href="/">Voltar para o builder</a>
+        <h1>Configuracao MPChelis</h1>
+        <p class="subtle">
+          Esta pagina altera o arquivo <b>config.json</b>. As categorias
+          controlam quais uploaders filtram a busca no builder principal.
+        </p>
+      </div>
+
+      <section class="panel">
+        <div class="field">
+          <label for="backendURL">URL de origem</label>
+          <input id="backendURL" placeholder="https://mpcfill.com" />
+        </div>
+
+        <div class="field">
+          <label for="oldFrameUploaders">OldFrame & Scan</label>
+          <textarea
+            id="oldFrameUploaders"
+            spellcheck="false"
+            placeholder="Um uploader por linha."
+          ></textarea>
+          <div class="subtle">
+            Categoria filtrada por uploaders. Use o nome exibido na fonte ou no
+            resultado, por exemplo <b>Chilli_Axe</b>.
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="freeArtUploaders">Arte Livre</label>
+          <textarea
+            id="freeArtUploaders"
+            spellcheck="false"
+            placeholder="Deixe vazio para permitir todos os resultados."
+          ></textarea>
+          <div class="subtle">
+            Enquanto esta lista estiver vazia, a categoria Arte Livre nao aplica
+            filtro de uploader.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="save">Salvar configuracao</button>
+          <button id="loadSources">Listar uploaders da origem</button>
+        </div>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Uploaders encontrados</h2>
+        <div id="sourceList" class="chips">
+          <span class="subtle">Clique em Listar uploaders da origem.</span>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const configURL =
+        window.location.protocol === "file:"
+          ? "http://localhost:8080/config"
+          : "/config";
+      const apiBase =
+        window.location.protocol === "file:"
+          ? "http://localhost:8080/api"
+          : "/api";
+      let currentConfig = { categories: [] };
+
+      function setStatus(message, kind = "") {
+        $("status").textContent = message;
+        $("status").className = `status ${kind}`.trim();
+      }
+
+      function uploadersFromTextarea(id) {
+        return $(id).value
+          .split(/\r?\n/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+      }
+
+      function categoryUploaders(config, categoryName, fallback = []) {
+        const categories = Array.isArray(config.categories) ? config.categories : [];
+        const category = categories.find((item) => item.name === categoryName);
+        if (category) return category.uploaders || [];
+        if (categoryName === "OldFrame & Scan" && Array.isArray(config.uploaders)) {
+          return config.uploaders;
+        }
+        return fallback;
+      }
+
+      function categoryActiveUploaders(config, categoryName, fallback = []) {
+        const categories = Array.isArray(config.categories) ? config.categories : [];
+        const category = categories.find((item) => item.name === categoryName);
+        if (category && Array.isArray(category.activeUploaders)) {
+          return category.activeUploaders;
+        }
+        return categoryUploaders(config, categoryName, fallback);
+      }
+
+      function categoryDescription(config, categoryName) {
+        const categories = Array.isArray(config.categories) ? config.categories : [];
+        const category = categories.find((item) => item.name === categoryName);
+        return category?.description || "";
+      }
+
+      async function fetchConfig() {
+        const response = await fetch(configURL, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+
+      async function saveConfig() {
+        const preservedCategories = (currentConfig.categories || []).filter(
+          (category) =>
+            category.name !== "OldFrame & Scan" && category.name !== "Arte Livre"
+        );
+        const payload = {
+          backendURL: $("backendURL").value.trim(),
+          categories: [
+            {
+              name: "OldFrame & Scan",
+              description: categoryDescription(currentConfig, "OldFrame & Scan"),
+              uploaders: uploadersFromTextarea("oldFrameUploaders"),
+              activeUploaders: categoryActiveUploaders(
+                currentConfig,
+                "OldFrame & Scan",
+                uploadersFromTextarea("oldFrameUploaders")
+              ),
+            },
+            {
+              name: "Arte Livre",
+              description: categoryDescription(currentConfig, "Arte Livre"),
+              uploaders: uploadersFromTextarea("freeArtUploaders"),
+              activeUploaders: categoryActiveUploaders(
+                currentConfig,
+                "Arte Livre",
+                uploadersFromTextarea("freeArtUploaders")
+              ),
+            },
+            ...preservedCategories,
+          ],
+        };
+        const response = await fetch(configURL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        currentConfig = data;
+        $("backendURL").value = data.backendURL;
+        $("oldFrameUploaders").value = categoryUploaders(
+          data,
+          "OldFrame & Scan"
+        ).join("\n");
+        $("freeArtUploaders").value = categoryUploaders(data, "Arte Livre").join(
+          "\n"
+        );
+        setStatus("Configuracao salva.", "ok");
+      }
+
+      async function loadSources() {
+        const backend = $("backendURL").value.trim();
+        const response = await fetch(
+          `${apiBase}/2/sources/?backend=${encodeURIComponent(backend)}`
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+        const names = Array.from(
+          new Set(
+            Object.values(data.results || {})
+              .map((source) => source.name || source.key)
+              .filter(Boolean)
+          )
+        ).sort((a, b) => a.localeCompare(b));
+
+        $("sourceList").innerHTML = "";
+        for (const name of names) {
+          const button = document.createElement("button");
+          button.className = "chip";
+          button.type = "button";
+          button.textContent = name;
+          button.addEventListener("click", () => {
+            const current = new Set(uploadersFromTextarea("oldFrameUploaders"));
+            current.add(name);
+            $("oldFrameUploaders").value = Array.from(current).join("\n");
+          });
+          $("sourceList").appendChild(button);
+        }
+      }
+
+      $("save").addEventListener("click", () => {
+        saveConfig().catch((error) => setStatus(error.message, "error"));
+      });
+      $("loadSources").addEventListener("click", () => {
+        loadSources().catch((error) => setStatus(error.message, "error"));
+      });
+
+      fetchConfig()
+        .then((config) => {
+          currentConfig = config;
+          $("backendURL").value = config.backendURL || "https://mpcfill.com";
+          $("oldFrameUploaders").value = categoryUploaders(
+            config,
+            "OldFrame & Scan"
+          ).join("\n");
+          $("freeArtUploaders").value = categoryUploaders(
+            config,
+            "Arte Livre"
+          ).join("\n");
+          setStatus("Configuracao carregada.", "ok");
+        })
+        .catch((error) => {
+          setStatus(
+            `Nao foi possivel carregar a configuracao. Rode node server.mjs. ${error.message}`,
+            "error"
+          );
+        });
+    </script>
+  </body>
+</html>
