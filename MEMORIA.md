@@ -31,8 +31,9 @@ Observacao pratica: a regra deve ser aplicada aos comandos e edicoes do projeto.
 - Identidade global configurada:
   - user.name: `Chelis`
   - user.email: `contato.chelles@gmail.com`
-- `gh` nao esta disponivel no PATH, entao nao foi possivel criar repositorio remoto automaticamente pelo GitHub CLI.
-- Nao ha remoto configurado em `git remote -v`.
+- `gh` nao esta disponivel no PATH, mas o remoto foi configurado manualmente.
+- Remoto `origin`: `https://github.com/ChChelis/MPChelis.git`.
+- Push inicial concluido: branch local `main` rastreia `origin/main`.
 - Variaveis/recursos de autenticacao checados e ausentes: `GITHUB_TOKEN`, `GH_TOKEN`, `GIT_ASKPASS`, `SSH_AUTH_SOCK`.
 - A pasta `downloads/` foi marcada para ficar fora do versionamento.
 
