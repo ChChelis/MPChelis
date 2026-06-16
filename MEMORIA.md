@@ -569,3 +569,9 @@ Checagem antes do commit:
 - `git diff --stat` mostrou 357 insercoes e 33 remocoes.
 - `git diff -- config.json` mostrou alteracao na categoria `FullArt`, adicionando `j1va`, `Nelynes`, `PsilosX` e `JohnPrime` em `uploaders` e `activeUploaders`.
 - Como o pedido foi subir o projeto atual, a intencao e incluir o estado atual dos tres arquivos no commit.
+
+Resultado:
+
+- Commit criado: `1cb4d84 Add per-result category expansion`.
+- Arquivos incluidos: `index.html`, `MEMORIA.md`, `config.json`.
+- Push concluido para `https://github.com/ChChelis/MPChelis.git`, branch `main`.
